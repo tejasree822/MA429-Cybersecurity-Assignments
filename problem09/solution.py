@@ -71,6 +71,7 @@ def main():
         if query[0] != 1:
             continue
         _, u, v = query
+        edge = (u, v)
         pos = bisect_left(day_ends, i) + k - 1
         end = day_ends[pos] + 1 if pos < len(day_ends) else q
         if end <= i:
@@ -78,11 +79,11 @@ def main():
         l, r = i + size, end + size
         while l < r:
             if l & 1:
-                seg[l].append((u, v))
+                seg[l].append(edge)
                 l += 1
             if r & 1:
                 r -= 1
-                seg[r].append((u, v))
+                seg[r].append(edge)
             l >>= 1
             r >>= 1
 
