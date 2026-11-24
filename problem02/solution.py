@@ -1,54 +1,70 @@
-# Interactive solution for Codeforces 2246E.
-# The judge protocol is interactive; this file cannot be tested with ordinary
-# stdin sample files. Flush after every query and exit on -1.
+# Interactive solution. Flush every query and terminate immediately on -1.
 import sys
 import random
 
 def read_int():
-    s = sys.stdin.readline()
-    if not s:
+    line = sys.stdin.readline()
+    if not line:
         sys.exit(0)
-    x = int(s)
-    if x == -1:
+    value = int(line)
+    if value == -1:
         sys.exit(0)
-    return x
+    return value
 
 def main():
     t = read_int()
     rng = random.SystemRandom()
+    LIMIT = 1 << 30
     for _ in range(t):
-        # x = 1 distinguishes the operator except in the deliberately
-        # ambiguous case o == 1.
-        print(1, flush=True)
+        # A random mask with both zero and one bits makes the o == x
+        # ambiguity distinguishable using complementary masks.
+        x = rng.randrange(1, LIMIT - 1)
+        while x == 0 or x == LIMIT - 1:
+            x = rng.randrange(1, LIMIT - 1)
+        print(x, flush=True)
         o = read_int()
 
-        if o == 0:
-            # AND, and the least significant bit of v is zero.
-            m0, m1 = 0, 1
-            print(m0, m1, flush=True)
-            r = read_int()
-            print(r & 1, flush=True)
-        elif o > 1:
-            # OR. Any set bit of o above bit zero is also set in v.
-            bit = 1 << (o.bit_length() - 1)
-            print(0, bit, flush=True)
-            r = read_int()
-            print(0 if (r & bit) else 1, flush=True)
-        else:
-            # o == 1: either OR with v's low bit 0, or AND with v's
-            # low bit 1. Random opposite-parity masks make the exceptional
-            # indistinguishable cases negligibly unlikely.
-            m0 = rng.randrange(0, 1 << 29) * 2
-            m1 = rng.randrange(0, 1 << 29) * 2 + 1
-            print(m0, m1, flush=True)
-            r = read_int()
-            if r == m0:
-                print(0, flush=True)
-            elif r == m1:
-                print(1, flush=True)
+        if o != x:
+            # A 1 outside x proves OR; a 0 inside x proves AND.
+            outside = o & (LIMIT - 1 - x)
+            if outside:
+                op = "or"
+                known_bit = outside & -outside  # v has this bit = 1
             else:
-                # In the non-exceptional case the low bit identifies b.
-                print(0 if (r & 1) else 1, flush=True)
+                op = "and"
+                missing = x & (LIMIT - 1 - o)
+                known_bit = missing & -missing  # v has this bit = 0
+
+            m0, m1 = 0, known_bit
+            print(m0, m1, flush=True)
+            r = read_int()
+            if op == "or":
+                b = 0 if (r & known_bit) else 1
+            else:
+                b = 1 if (r & known_bit) else 0
+            print(b, flush=True)
+        else:
+            # If o == x, then:
+            # OR implies v is a submask of x; AND implies v is a supermask.
+            # Set m0=x and m1=~x. The four (operator, b) cases have
+            # disjoint signatures on the x and ~x bit positions.
+            m0 = x
+            m1 = (LIMIT - 1) ^ x
+            print(m0, m1, flush=True)
+            r = read_int()
+            low_zero = (r & x) == 0
+            high_zero = (r & (LIMIT - 1 ^ x)) == 0
+            low_one = (r & x) == x
+            high_one = (r & (LIMIT - 1 ^ x)) == (LIMIT - 1 ^ x)
+            if low_zero or high_zero:
+                b = 0
+            elif low_one or high_one:
+                b = 1
+            else:
+                # For nonempty x and its complement, the cases above
+                # cover all valid replies under the protocol.
+                sys.exit(0)
+            print(b, flush=True)
 
 if __name__ == "__main__":
     main()
