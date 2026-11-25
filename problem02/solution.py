@@ -1,7 +1,8 @@
-# Randomized interactive solution. The 29-one mask makes the ambiguous
-# case extremely unlikely to remain ambiguous after the second query.
+# Randomized interactive solution. Flush every query and exit on -1.
 import sys
 import random
+
+FULL = (1 << 30) - 1
 
 def read_int():
     line = sys.stdin.readline()
@@ -13,30 +14,31 @@ def read_int():
     return value
 
 def possible(v, x):
-    return (v & x) == x or (v & (FULL ^ x)) == 0
-
-FULL = (1 << 30) - 1
+    # o == x is possible for OR when v is a submask of x,
+    # and for AND when v is a supermask of x.
+    return (v & (FULL ^ x)) == 0 or (v & x) == x
 
 def main():
     t = read_int()
     rng = random.SystemRandom()
     for _ in range(t):
-        # Exactly one zero bit; x is neither 0 nor FULL.
-        zero_bit = 1 << rng.randrange(30)
-        x = FULL ^ zero_bit
+        # A balanced mask makes both ambiguous families small:
+        # 2^15 possible submasks and 2^15 possible supermasks.
+        positions = rng.sample(range(30), 15)
+        x = sum(1 << bit for bit in positions)
         print(x, flush=True)
         o = read_int()
 
         if o != x:
             outside = o & (FULL ^ x)
             if outside:
-                # OR: this outside bit is certainly set in v.
+                # OR: a set bit outside x must also be set in v.
                 bit = outside & -outside
                 print(0, bit, flush=True)
                 r = read_int()
                 b = 0 if (r & bit) else 1
             else:
-                # AND: this missing x-bit is certainly zero in v.
+                # AND: a missing bit inside x must be zero in v.
                 missing = x & (FULL ^ o)
                 bit = missing & -missing
                 print(0, bit, flush=True)
@@ -44,26 +46,24 @@ def main():
                 b = 1 if (r & bit) else 0
             print(b, flush=True)
         else:
-            # In this case v is either a supermask or a submask of x.
-            # Random m0,m1 make both candidate values possible with
-            # probability at most 2/2^29.
+            # For each possible answer, decode its candidate v. With random
+            # masks, the chance both candidates pass the sub/supermask test
+            # is about 2^-14. This remains a randomized solution.
             m0 = rng.randrange(1 << 30)
             m1 = rng.randrange(1 << 30)
             while m1 == m0:
                 m1 = rng.randrange(1 << 30)
             print(m0, m1, flush=True)
             r = read_int()
-            v0 = r ^ m0
-            v1 = r ^ m1
-            ok0 = possible(v0, x)
-            ok1 = possible(v1, x)
+            ok0 = possible(r ^ m0, x)
+            ok1 = possible(r ^ m1, x)
             if ok0 and not ok1:
                 b = 0
             elif ok1 and not ok0:
                 b = 1
             else:
-                # Rare randomized collision; choose uniformly as prescribed
-                # by the probabilistic strategy.
+                # Rare collision: the protocol gives no deterministic way
+                # to disambiguate this single reply for these chosen masks.
                 b = rng.randrange(2)
             print(b, flush=True)
 
