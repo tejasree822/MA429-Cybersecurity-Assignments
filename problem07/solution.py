@@ -1,3 +1,4 @@
+# NOT SUBMISSION-READY: O(n^2) Python implementation has not passed maximum-constraint timing tests
 import sys
 from array import array
 
