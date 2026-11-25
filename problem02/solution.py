@@ -1,3 +1,4 @@
+# NOT SUBMISSION-READY: randomized interactive strategy has a nonzero failure probability
 # Randomized interactive solution. Flush every query and exit on -1.
 import sys
 import random
