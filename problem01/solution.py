@@ -1,3 +1,4 @@
+# NOT SUBMISSION-READY: shortest-path/T-join approach needs full performance validation
 from collections import deque
 import sys
 
